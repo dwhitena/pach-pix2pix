@@ -1,0 +1,74 @@
+{
+  "pipeline": {
+    "name": "model"
+  },
+  "transform": {
+    "image": "dwhitena/pix2pix",
+    "cmd": [ 
+	"python",
+	"pix2pix.py",
+	"--mode",
+	"train",
+	"--output_dir",
+	"/pfs/out",
+	"--max_epochs",
+	"200",
+	"--input_dir",
+	"/pfs/training",
+	"--which_direction",
+	"BtoA"
+    ],
+    "stdin": [ ],
+    "overwrite": true
+  },
+  "parallelism_spec": {
+    "strategy": "CONSTANT",
+    "constant": "1"
+  },
+  "inputs": [
+    {
+      "repo": {
+        "name": "training"
+      },
+      "method": "global"
+    }
+  ]
+}
+{
+  "pipeline": {
+    "name": "inference"
+  },
+  "transform": {
+    "image": "dwhitena/pix2pix",
+    "cmd": [ 
+	"python",
+	"pix2pix.py",
+	"--mode",
+	"test",
+	"--output_dir",
+	"/pfs/out",
+	"--input_dir",
+	"/pfs/facades",
+	"--checkpoint",
+	"/pfs/model"
+    ],
+    "stdin": []
+  },
+  "parallelism_spec": {
+    "strategy": "CONSTANT",
+    "constant": "1"
+  },
+  "inputs": [
+    {
+      "repo": {
+        "name": "facades"
+      }
+    },
+    {
+      "repo": {
+	"name": "model"
+      },
+      "method": "global"
+    }
+  ]
+}
