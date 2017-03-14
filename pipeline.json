@@ -1,21 +1,21 @@
 {
   "pipeline": {
-    "name": "model"
+    "name": "checkpoint"
   },
   "transform": {
-    "image": "dwhitena/pix2pix",
+    "image": "dwhitena/pix2pix-pach",
     "cmd": [ 
-	"python",
-	"pix2pix.py",
-	"--mode",
-	"train",
-	"--output_dir",
-	"/pfs/out",
-	"--max_epochs",
-	"200",
-	"--input_dir",
-	"/pfs/training",
-	"--which_direction",
+	"python", 
+	"pix2pix.py", 
+	"--mode", 
+	"train", 
+	"--output_dir", 
+	"/pfs/out", 
+	"--max_epochs", 
+	"2", 
+	"--input_dir", 
+	"/pfs/training", 
+	"--which_direction", 
 	"BtoA"
     ],
     "stdin": [ ],
@@ -36,23 +36,43 @@
 }
 {
   "pipeline": {
+    "name": "model"
+  },
+  "transform": {
+    "image": "dwhitena/pix2pix-pach",
+    "cmd": [ "/bin/bash" ],
+    "stdin": [ 
+	"sed -i 's/out/checkpoint/g' /pfs/checkpoint/checkpoint", 
+	"python pix2pix.py --mode export --output_dir /pfs/out --checkpoint /pfs/checkpoint" 
+    ],
+    "overwrite": true
+  },
+  "parallelism_spec": {
+    "strategy": "CONSTANT",
+    "constant": "1"
+  },
+  "inputs": [
+    {
+      "repo": {
+        "name": "checkpoint"
+      },
+      "method": "global"
+    }
+  ]
+}
+{
+  "pipeline": {
     "name": "inference"
   },
   "transform": {
-    "image": "dwhitena/pix2pix",
-    "cmd": [ 
-	"python",
-	"pix2pix.py",
-	"--mode",
-	"test",
-	"--output_dir",
-	"/pfs/out",
-	"--input_dir",
-	"/pfs/facades",
-	"--checkpoint",
-	"/pfs/model"
-    ],
-    "stdin": []
+    "image": "dwhitena/pix2pix-pach",
+    "cmd": [ "/bin/bash" ],
+    "stdin": [
+	"for filename in /pfs/facades/*; do",
+		"rawname=$(basename $filename)",
+		"python process-local.py --model_dir /pfs/model --input_file $filename --output_file /pfs/out/$basename",	
+	"done"
+    ]
   },
   "parallelism_spec": {
     "strategy": "CONSTANT",
