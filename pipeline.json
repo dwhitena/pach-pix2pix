@@ -3,22 +3,12 @@
     "name": "checkpoint"
   },
   "transform": {
-    "image": "dwhitena/pix2pix-pach",
-    "cmd": [ 
-	"python", 
-	"pix2pix.py", 
-	"--mode", 
-	"train", 
-	"--output_dir", 
-	"/pfs/out", 
-	"--max_epochs", 
-	"2", 
-	"--input_dir", 
-	"/pfs/training", 
-	"--which_direction", 
-	"BtoA"
+    "image": "dwhitena/pix2pix-pach-serve",
+    "cmd": [ "/bin/bash" ],
+    "stdin": [
+	"python pix2pix.py --mode train --output_dir /pfs/out --max_epochs 2 --input_dir /pfs/training --which_direction BtoA", 
+	"sed -i 's/out/checkpoint/g' /pfs/out/checkpoint"
     ],
-    "stdin": [ ],
     "overwrite": true
   },
   "parallelism_spec": {
@@ -39,11 +29,11 @@
     "name": "model"
   },
   "transform": {
-    "image": "dwhitena/pix2pix-pach",
+    "image": "dwhitena/pix2pix-pach-serve",
     "cmd": [ "/bin/bash" ],
     "stdin": [ 
-	"sed -i 's/out/checkpoint/g' /pfs/checkpoint/checkpoint", 
-	"python pix2pix.py --mode export --output_dir /pfs/out --checkpoint /pfs/checkpoint" 
+	"python pix2pix.py --mode export --output_dir /pfs/out --checkpoint /pfs/checkpoint",
+	"sed -i 's/out/model/g' /pfs/out/checkpoint" 
     ],
     "overwrite": true
   },
@@ -62,15 +52,15 @@
 }
 {
   "pipeline": {
-    "name": "inference"
+    "name": "generate_images"
   },
   "transform": {
-    "image": "dwhitena/pix2pix-pach",
+    "image": "dwhitena/pix2pix-pach-serve",
     "cmd": [ "/bin/bash" ],
     "stdin": [
-	"for filename in /pfs/facades/*; do",
+	"for filename in /pfs/input_images/*; do",
 		"rawname=$(basename $filename)",
-		"python process-local.py --model_dir /pfs/model --input_file $filename --output_file /pfs/out/$basename",	
+		"python process-local.py --model_dir /pfs/model --input_file $filename --output_file /pfs/out/$rawname",	
 	"done"
     ]
   },
@@ -81,7 +71,7 @@
   "inputs": [
     {
       "repo": {
-        "name": "facades"
+        "name": "input_images"
       }
     },
     {
