@@ -3,7 +3,7 @@
     "name": "checkpoint"
   },
   "transform": {
-    "image": "dwhitena/pix2pix-pach-serve",
+    "image": "dwhitena/pix2pix",
     "cmd": [ "/bin/bash" ],
     "stdin": [
 	"python pix2pix.py --mode train --output_dir /pfs/out --max_epochs 2 --input_dir /pfs/training --which_direction BtoA", 
@@ -29,7 +29,7 @@
     "name": "model"
   },
   "transform": {
-    "image": "dwhitena/pix2pix-pach-serve",
+    "image": "dwhitena/pix2pix",
     "cmd": [ "/bin/bash" ],
     "stdin": [ 
 	"python pix2pix.py --mode export --output_dir /pfs/out --checkpoint /pfs/checkpoint",
@@ -52,13 +52,36 @@
 }
 {
   "pipeline": {
+    "name": "preprocess_images"
+  },
+  "transform": {
+    "image": "dwhitena/pix2pix",
+    "cmd": [ "/bin/bash" ],
+    "stdin": [
+	"python process.py --input_dir /pfs/input_images --operation resize --output_dir /pfs/out"	
+    ]
+  },
+  "parallelism_spec": {
+    "strategy": "CONSTANT",
+    "constant": "1"
+  },
+  "inputs": [
+    {
+      "repo": {
+        "name": "input_images"
+      }
+    }
+  ]
+}
+{
+  "pipeline": {
     "name": "generate_images"
   },
   "transform": {
-    "image": "dwhitena/pix2pix-pach-serve",
+    "image": "dwhitena/pix2pix",
     "cmd": [ "/bin/bash" ],
     "stdin": [
-	"for filename in /pfs/input_images/*; do",
+	"for filename in /pfs/preprocess_images/*; do",
 		"rawname=$(basename $filename)",
 		"python process-local.py --model_dir /pfs/model --input_file $filename --output_file /pfs/out/$rawname",	
 	"done"
@@ -71,7 +94,7 @@
   "inputs": [
     {
       "repo": {
-        "name": "input_images"
+        "name": "preprocess_images"
       }
     },
     {
